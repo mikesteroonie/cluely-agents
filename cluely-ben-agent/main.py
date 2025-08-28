@@ -5,7 +5,7 @@ import os
 import asyncio
 from threading import Thread
 import uuid
-import ngrok
+# import ngrok  # Uncomment for local development with ngrok
 
 from flask import Flask, request, Response
 
@@ -17,23 +17,29 @@ port = int(os.getenv("PORT", 8080))
 username = os.getenv("INBOX_USERNAME")
 display_name = os.getenv("DISPLAY_NAME")
 inbox = f"{username}@agentmail.to"
-domain = os.getenv("WEBHOOK_DOMAIN")  # Optional: set a custom ngrok domain
+# domain = os.getenv("WEBHOOK_DOMAIN")  # Optional: set a custom ngrok domain
 
 if not username:
     print("⚠️  WARNING: INBOX_USERNAME is not set!")
-    print("   Make sure your .env file contains: INBOX_USERNAME=hiring-test")
+    print("   Make sure your .env file contains: INBOX_USERNAME=ben-cluely")
 
 client_id = "ben-cluely-agent-1"
 
-# Start ngrok tunnel
-print(f"🚀 Starting ngrok tunnel on port {port}...")
-if domain:
-    listener = ngrok.forward(port, domain=domain, authtoken_from_env=True)
-else:
-    listener = ngrok.forward(port, authtoken_from_env=True)
+# === NGROK SETUP (for local development) ===
+# Uncomment the following block to use ngrok for local development:
+#
+# print(f"🚀 Starting ngrok tunnel on port {port}...")
+# if domain:
+#     listener = ngrok.forward(port, domain=domain, authtoken_from_env=True)
+# else:
+#     listener = ngrok.forward(port, authtoken_from_env=True)
+# 
+# webhook_url = listener.url()
+# print(f"🌐 Ngrok tunnel URL: {webhook_url}")
 
-webhook_url = listener.url()
-print(f"🌐 Ngrok tunnel URL: {webhook_url}")
+# === RENDER/PRODUCTION SETUP ===
+# For production deployment (Render, Railway, etc.), use WEBHOOK_URL env var:
+webhook_url = os.getenv("WEBHOOK_URL")
 
 app = Flask(__name__)
 
@@ -42,7 +48,6 @@ client = AgentMail(api_key=os.getenv("AGENTMAIL_API_KEY"))
 inbox_obj = client.inboxes.create(username=username, display_name=display_name, client_id=client_id) 
 inbox_address = f"{username}@agentmail.to"
 
-# Create webhook with ngrok URL
 client.webhooks.create(
     url=webhook_url,
     inbox_ids=[inbox_obj.inbox_id],
