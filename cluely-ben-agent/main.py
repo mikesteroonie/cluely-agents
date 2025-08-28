@@ -77,7 +77,6 @@ agent = Agent(
     name="Ben Cluely Agent",
     instructions=instructions,
     tools=AgentMailToolkit(client).get_tools() + [WebSearchTool()],
-    model="gpt-4.1",
 )
 
 @app.route("/", methods=["POST"])
@@ -99,9 +98,9 @@ def process_webhook(payload):
     email = payload["message"]
     thread_id = email.get("thread_id")
     
-    print(f"📬 Email from: {email.get('from')}", flush=True)
-    print(f"📝 Subject: {email.get('subject')}", flush=True)
-    print(f"🔗 Thread ID: {thread_id}", flush=True)
+    print(f"📬 Email from: {email.get('from', 'Unknown')}", flush=True)
+    print(f"📝 Subject: {email.get('subject', '(No subject)')}", flush=True)
+    print(f"🔗 Thread ID: {thread_id or 'None'}", flush=True)
     sys.stdout.flush()
     
     try:
@@ -135,9 +134,9 @@ def process_webhook(payload):
             attachments_info += f"- {att['filename']} (ID: {att['attachment_id']}, Type: {att['content_type']}, Size: {att['size']} bytes)\n"
     
     prompt = f"""
-From: {email["from"]}
-Subject: {email["subject"]}
-Body:\n{email["text"]}
+From: {email.get("from", "Unknown sender")}
+Subject: {email.get("subject", "(No subject)")}
+Body:\n{email.get("text", "(No text content)")}
 {attachments_info}
 
 IMPORTANT FOR TOOL CALLS:
