@@ -57,17 +57,13 @@ client = AgentMail(api_key=os.getenv("AGENTMAIL_API_KEY"))
 inbox_obj = client.inboxes.create(username=username, display_name=display_name, client_id=client_id) 
 inbox_address = f"{username}@agentmail.to"
 
-try:
-    webhook = client.webhooks.create(
-        url=webhook_url,
-        inbox_ids=[inbox_obj.inbox_id],
-        event_types=["message.received"],
-        client_id="ben-cluely-agent-webhook",
-    )
-    print(f"✅ Webhook created successfully: {webhook}")
-except Exception as e:
-    print(f"⚠️ Webhook creation failed: {e}")
-    print("You may need to manually create the webhook via API")
+
+webhook = client.webhooks.create(
+    url=webhook_url,
+    inbox_ids=[inbox_obj.inbox_id],
+    event_types=["message.received"],
+    client_id="ben-cluely-agent-webhook",
+)
 
 system_prompt = os.getenv("SYSTEM_PROMPT")
 if system_prompt:
@@ -81,13 +77,15 @@ agent = Agent(
     name="Ben Cluely Agent",
     instructions=instructions,
     tools=AgentMailToolkit(client).get_tools() + [WebSearchTool()],
-    model="gpt-5-mini",
+    model="gpt-5",
 )
 
 @app.route("/", methods=["POST"])
 def receive_webhook_root():
-    print("WEBHOOK received at ROOT /")
-    print(request.json)
+    import sys
+    print("🔔 WEBHOOK RECEIVED!", flush=True)
+    print(f"📧 Webhook payload: {request.json}", flush=True)
+    sys.stdout.flush()
     Thread(target=process_webhook, args=(request.json,)).start()
     return Response(status=200)
 
@@ -97,12 +95,14 @@ def root_get():
 
 
 def process_webhook(payload):
+    import sys
     email = payload["message"]
     thread_id = email.get("thread_id")
     
-    if not thread_id:
-        print("⚠️  No thread_id found in email payload")
-        return
+    print(f"📬 Email from: {email.get('from')}", flush=True)
+    print(f"📝 Subject: {email.get('subject')}", flush=True)
+    print(f"🔗 Thread ID: {thread_id}", flush=True)
+    sys.stdout.flush()
     
     try:
         thread = client.inboxes.threads.get(inbox_id=inbox_obj.inbox_id, thread_id=thread_id)
@@ -155,21 +155,31 @@ Use these EXACT values when calling get_thread and get_attachment tools.
     # Pass the actual thread context to the agent
     try:
         response = asyncio.run(Runner.run(agent, thread_context + [{"role": "user", "content": prompt}]))
-        print("Response:\n\n", response.final_output, "\n")
+        print(f"✅ Agent response: {response.final_output}", flush=True)
+        sys.stdout.flush()
         
         # Check if response contains error-like text
         if "error" in response.final_output.lower() or "here it goes" in response.final_output.lower():
-            print("⚠️  WARNING: Response contains potential error text!")
+            print("⚠️  WARNING: Response contains potential error text!", flush=True)
+            sys.stdout.flush()
             
     except Exception as e:
         print(f"❌ ERROR running agent: {e}")
         return
 
-    client.inboxes.messages.reply(
-        inbox_id=inbox_obj.inbox_id,
-        message_id=email["message_id"],
-        html=response.final_output,
-    )
+    try:
+        print("📤 Sending reply...", flush=True)
+        sys.stdout.flush()
+        client.inboxes.messages.reply(
+            inbox_id=inbox_obj.inbox_id,
+            message_id=email["message_id"],
+            html=response.final_output,
+        )
+        print("✅ Reply sent successfully!", flush=True)
+        sys.stdout.flush()
+    except Exception as e:
+        print(f"❌ ERROR sending reply: {e}", flush=True)
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":
