@@ -167,19 +167,13 @@ Use these EXACT values when calling get_thread and get_attachment tools.
         print(f"❌ ERROR running agent: {e}")
         return
 
-    try:
-        print("📤 Sending reply...", flush=True)
-        sys.stdout.flush()
-        client.inboxes.messages.reply(
-            inbox_id=inbox_obj.inbox_id,
-            message_id=email["message_id"],
-            html=response.final_output,
-        )
-        print("✅ Reply sent successfully!", flush=True)
-        sys.stdout.flush()
-    except Exception as e:
-        print(f"❌ ERROR sending reply: {e}", flush=True)
-        sys.stdout.flush()
+   
+    client.inboxes.messages.reply(
+        inbox_id=inbox_obj.inbox_id,
+        message_id=email["message_id"],
+        html=response.final_output,
+    )
+      
 
 
 if __name__ == "__main__":
