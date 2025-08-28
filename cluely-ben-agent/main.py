@@ -46,15 +46,8 @@ client_id = "ben-cluely-agent-1"
 #     print("✅ System prompt loaded from system_prompt.txt")
 # except FileNotFoundError:
 #     print("⚠️  WARNING: system_prompt.txt file not found!")
-#     # Fallback to a basic prompt
-#     instructions = f"You are Ben from Cluely for the inbox {inbox_address}. Respond as Ben Cluely."
-# except Exception as e:
-#     print(f"⚠️  ERROR reading system_prompt.txt: {e}")
-#     # Fallback to a basic prompt
-#     instructions = f"You are Ben from Cluely for the inbox {inbox_address}. Respond as Ben Cluely."
 
-# === RENDER/PRODUCTION SETUP ===
-# For production deployment (Render, Railway, etc.), use WEBHOOK_URL env var:
+
 webhook_url = os.getenv("WEBHOOK_URL")
 
 app = Flask(__name__)
@@ -64,12 +57,17 @@ client = AgentMail(api_key=os.getenv("AGENTMAIL_API_KEY"))
 inbox_obj = client.inboxes.create(username=username, display_name=display_name, client_id=client_id) 
 inbox_address = f"{username}@agentmail.to"
 
-client.webhooks.create(
-    url=webhook_url,
-    inbox_ids=[inbox_obj.inbox_id],
-    event_types=["message.received"],
-    client_id="ben-cluely-agent-webhook",
-)
+try:
+    webhook = client.webhooks.create(
+        url=webhook_url,
+        inbox_ids=[inbox_obj.inbox_id],
+        event_types=["message.received"],
+        client_id="ben-cluely-agent-webhook",
+    )
+    print(f"✅ Webhook created successfully: {webhook}")
+except Exception as e:
+    print(f"⚠️ Webhook creation failed: {e}")
+    print("You may need to manually create the webhook via API")
 
 system_prompt = os.getenv("SYSTEM_PROMPT")
 if system_prompt:
