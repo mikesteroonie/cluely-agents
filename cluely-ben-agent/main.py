@@ -37,6 +37,22 @@ client_id = "ben-cluely-agent-1"
 # webhook_url = listener.url()
 # print(f"🌐 Ngrok tunnel URL: {webhook_url}")
 
+
+# === NGROK SETUP (for local development) ===
+# try:
+#     with open("system_prompt.txt", "r") as f:
+#         system_prompt = f.read()
+#     instructions = system_prompt.strip().replace("{inbox}", inbox_address)
+#     print("✅ System prompt loaded from system_prompt.txt")
+# except FileNotFoundError:
+#     print("⚠️  WARNING: system_prompt.txt file not found!")
+#     # Fallback to a basic prompt
+#     instructions = f"You are Ben from Cluely for the inbox {inbox_address}. Respond as Ben Cluely."
+# except Exception as e:
+#     print(f"⚠️  ERROR reading system_prompt.txt: {e}")
+#     # Fallback to a basic prompt
+#     instructions = f"You are Ben from Cluely for the inbox {inbox_address}. Respond as Ben Cluely."
+
 # === RENDER/PRODUCTION SETUP ===
 # For production deployment (Render, Railway, etc.), use WEBHOOK_URL env var:
 webhook_url = os.getenv("WEBHOOK_URL")
@@ -55,19 +71,12 @@ client.webhooks.create(
     client_id="ben-cluely-agent-webhook",
 )
 
-try:
-    with open("system_prompt.txt", "r") as f:
-        system_prompt = f.read()
+system_prompt = os.getenv("SYSTEM_PROMPT")
+if system_prompt:
     instructions = system_prompt.strip().replace("{inbox}", inbox_address)
-    print("✅ System prompt loaded from system_prompt.txt")
-except FileNotFoundError:
-    print("⚠️  WARNING: system_prompt.txt file not found!")
-    # Fallback to a basic prompt
-    instructions = f"You are Ben from Cluely for the inbox {inbox_address}. Respond as Ben Cluely."
-except Exception as e:
-    print(f"⚠️  ERROR reading system_prompt.txt: {e}")
-    # Fallback to a basic prompt
-    instructions = f"You are Ben from Cluely for the inbox {inbox_address}. Respond as Ben Cluely."
+    print("System prompt loaded from environment variable")
+else:
+    print("WARNING: SYSTEM_PROMPT environment variable not set!")
 
 
 agent = Agent(
