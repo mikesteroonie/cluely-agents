@@ -77,7 +77,7 @@ agent = Agent(
     name="Ben Cluely Agent",
     instructions=instructions,
     tools=AgentMailToolkit(client).get_tools() + [WebSearchTool()],
-    model="gpt-5",
+    model="gpt-4.1",
 )
 
 @app.route("/", methods=["POST"])
